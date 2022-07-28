@@ -1,1 +1,1 @@
-# logsight-jobs
+# scheduled-jobs
