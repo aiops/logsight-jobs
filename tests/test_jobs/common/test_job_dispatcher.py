@@ -9,7 +9,7 @@ from logsight.connectors.connectors.sql_db import DatabaseConfigProperties
 from logsight.services import ElasticsearchService
 from logsight.services.service_provider import ServiceProvider
 
-from common.job_dispatcher import PeriodicJobDispatcher, TimedJobDispatcher
+from logsight_jobs.common.job_dispatcher import PeriodicJobDispatcher, TimedJobDispatcher
 from logsight_jobs.common.factory import JobDispatcherFactory
 from logsight_jobs.persistence.dto import IndexInterval
 from logsight_jobs.persistence.timestamp_storage import PostgresTimestampStorage
