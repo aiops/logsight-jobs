@@ -4,6 +4,7 @@ from datetime import datetime
 from multiprocessing import set_start_method
 
 # hello world
+from time import sleep
 
 from logsight_jobs.jobs.incidents import CalculateIncidentJob
 from logsight_jobs.common.factory import JobDispatcherFactory
@@ -55,13 +56,10 @@ def run_scheduled_jobs():
 
 
 def run():
-    incident_job = CalculateIncidentJob(IndexInterval("dwwd5tuvy6aqerrjkmr4pe635c", datetime.min))
-    incident_job.execute()
-
-    # verify_services()
-    # run_scheduled_jobs()
-    # while True:
-    #     sleep(100)
+    verify_services()
+    run_scheduled_jobs()
+    while True:
+        sleep(100)
 
 
 if __name__ == '__main__':

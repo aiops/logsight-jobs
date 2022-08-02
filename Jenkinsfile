@@ -4,6 +4,8 @@ pipeline {
     environment {
         DOCKER = credentials('dockerhub')
         DOCKER_REPO = "logsight/logsight"
+        LOGSIGHT_LIB_VERSION = "lib"
+        GITHUB_TOKEN = credentials('github-pat-jenkins')
     }
 
     stages {
@@ -19,7 +21,9 @@ pipeline {
                     env.RETRY_TIMEOUT = 1
                 }
                 sh 'pip install -r requirements.txt'
-                sh 'PYTHONPATH=$PWD/logsight py.test --junitxml test-report.xml --cov-report xml:coverage-report.xml --cov=logsight tests/'
+                sh 'apt-get update && apt-get install -y git-lfs'
+                sh 'pip install "git+https://$GITHUB_TOKEN@github.com/aiops/logsight.git@$LOGSIGHT_LIB_VERSION"'
+                sh 'py.test --junitxml test-report.xml --cov-report xml:coverage-report.xml --cov=logsight_jobs tests/'
                 stash name: 'test-reports', includes: '*.xml' 
             }
             post {
@@ -42,9 +46,9 @@ pipeline {
                             unstash "test-reports"
                             withSonarQubeEnv('logsight-sonarqube') {
                                 sh """ 
-                                    sonar-scanner -Dsonar.projectKey=aiops_logsight -Dsonar.branch.name=$BRANCH_NAME \
+                                    sonar-scanner -Dsonar.projectKey=aiops_logsight-jobs -Dsonar.branch.name=$BRANCH_NAME \
                                         -Dsonar.organization=logsight \
-                                        -Dsonar.sources=logsight -Dsonar.tests=tests/. \
+                                        -Dsonar.sources=logsight_jobs -Dsonar.tests=tests/. \
                                         -Dsonar.inclusions="**/*.py" \
                                         -Dsonar.python.coverage.reportPaths=coverage-report.xml \
                                         -Dsonar.test.reportPath=test-report.xml
@@ -75,7 +79,12 @@ pipeline {
         }
         stage ("Build and test Docker Image") {
             steps {
-                sh "docker build . -t $DOCKER_REPO:${GIT_COMMIT[0..7]}"
+                sh """
+                    docker build \
+                        --build-arg GITHUB_TOKEN=$GITHUB_TOKEN \
+                        --build-arg LOGSIGHT_LIB_VERSION=$LOGSIGHT_LIB_VERSION \
+                        -t $DOCKER_REPO:${GIT_COMMIT[0..7]} .
+                """
                 // Add step/script to test (amd64) docker image
             }
         }
@@ -89,7 +98,13 @@ pipeline {
                 sh "docker buildx rm"
                 sh "docker buildx create --driver docker-container --name multiarch --use --bootstrap"
                 sh "echo $DOCKER_PSW | docker login -u $DOCKER_USR --password-stdin"
-                sh "docker buildx build --push --platform linux/amd64,linux/arm64/v8 -t $DOCKER_REPO:$BRANCH_NAME -t $DOCKER_REPO:latest ."
+                sh """
+                    docker buildx build \
+                        --build-arg GITHUB_TOKEN=$GITHUB_TOKEN \
+                        --build-arg LOGSIGHT_LIB_VERSION=$LOGSIGHT_LIB_VERSION \
+                        --push --platform linux/amd64,linux/arm64/v8 \
+                        -t $DOCKER_REPO:$BRANCH_NAME -t $DOCKER_REPO:latest .
+                """
                 sh "docker buildx rm"
             }
         }
