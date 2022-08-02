@@ -16,3 +16,4 @@ dacite
 onnxruntime
 psycopg2-binary
 gitpython
+pytest-cov
