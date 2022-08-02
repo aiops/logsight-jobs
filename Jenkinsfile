@@ -78,10 +78,12 @@ pipeline {
         }
         stage ("Build and test Docker Image") {
             steps {
-                sh "docker build \
+                sh """
+                    docker build \
                         --build-arg GITHUB_TOKEN=$GITHUB_TOKEN \
-                        --build-arg LOGSIGHT_LIB_VERSION=$LOGSIGHT_LIB_VERSION
-                         . -t $DOCKER_REPO:${GIT_COMMIT[0..7]}"
+                        --build-arg LOGSIGHT_LIB_VERSION=$LOGSIGHT_LIB_VERSION \
+                        -t $DOCKER_REPO:${GIT_COMMIT[0..7]} .
+                """
                 // Add step/script to test (amd64) docker image
             }
         }
@@ -95,7 +97,13 @@ pipeline {
                 sh "docker buildx rm"
                 sh "docker buildx create --driver docker-container --name multiarch --use --bootstrap"
                 sh "echo $DOCKER_PSW | docker login -u $DOCKER_USR --password-stdin"
-                sh "docker buildx build --push --platform linux/amd64,linux/arm64/v8 -t $DOCKER_REPO:$BRANCH_NAME -t $DOCKER_REPO:latest ."
+                sh """
+                    docker buildx build \
+                        --build-arg GITHUB_TOKEN=$GITHUB_TOKEN \
+                        --build-arg LOGSIGHT_LIB_VERSION=$LOGSIGHT_LIB_VERSION \
+                        --push --platform linux/amd64,linux/arm64/v8 \
+                        -t $DOCKER_REPO:$BRANCH_NAME -t $DOCKER_REPO:latest .
+                """
                 sh "docker buildx rm"
             }
         }
