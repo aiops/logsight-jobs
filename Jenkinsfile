@@ -4,7 +4,8 @@ pipeline {
     environment {
         DOCKER = credentials('dockerhub')
         DOCKER_REPO = "logsight/logsight"
-        VERSION = "lib"
+        LOGSIGHT_LIB_VERSION = "lib"
+        GITHUB_TOKEN = credentials('github-pat-jenkins')
     }
 
     stages {
@@ -20,7 +21,7 @@ pipeline {
                     env.RETRY_TIMEOUT = 1
                 }
                 sh 'pip install -r requirements.txt'
-                sh 'pip install "git+ssh://git@github.com/aiops/logsight.git@$VERSION"'
+                sh 'pip install "git+https://$GITHUB_TOKEN@github.com/aiops/logsight.git@$LOGSIGHT_LIB_VERSION"'
                 sh 'PYTHONPATH=$PWD/logsight py.test --junitxml test-report.xml --cov-report xml:coverage-report.xml --cov=logsight tests/'
                 stash name: 'test-reports', includes: '*.xml' 
             }
@@ -77,7 +78,10 @@ pipeline {
         }
         stage ("Build and test Docker Image") {
             steps {
-                sh "docker build . -t $DOCKER_REPO:${GIT_COMMIT[0..7]}"
+                sh "docker build \
+                        --build-arg GITHUB_TOKEN=$GITHUB_TOKEN \
+                        --build-arg LOGSIGHT_LIB_VERSION=$LOGSIGHT_LIB_VERSION
+                         . -t $DOCKER_REPO:${GIT_COMMIT[0..7]}"
                 // Add step/script to test (amd64) docker image
             }
         }
