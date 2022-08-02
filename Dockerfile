@@ -16,7 +16,6 @@ COPY ./requirements.txt .
 # install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
 RUN pip install "git+https://$GITHUB_TOKEN@github.com/aiops/logsight.git@$LOGSIGHT_LIB_VERSION"
 
 # copy code
