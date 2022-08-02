@@ -24,6 +24,11 @@ def index_job():
 
 
 @pytest.fixture
+def es_config():
+    yield ElasticsearchConfigProperties(scheme="scheme", host="host", port=9201, username="user", password="password")
+
+
+@pytest.fixture
 def db():
     cfg = DatabaseConfigProperties(host="host", port=9000, username="username", password="password", db_name="db_name")
     db = PostgresTimestampStorage("table", cfg)
@@ -33,9 +38,6 @@ def db():
     return db
 
 
-@pytest.fixture
-def es_config():
-    yield ElasticsearchConfigProperties(scheme="scheme", host="host", port=9201, username="user", password="password")
 
 
 def test__execute(index_job, db):

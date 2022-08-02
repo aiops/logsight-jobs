@@ -1,4 +1,4 @@
-from configs.properties import ESCleanupConfigProperties, IncidentJobConfigProperties, JobConfigProperties
+from logsight_jobs.configs.properties import ESCleanupConfigProperties, IncidentJobConfigProperties, JobConfigProperties
 
 
 def test_default_incident_properties():
