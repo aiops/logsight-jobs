@@ -3,8 +3,13 @@ import random
 from unittest.mock import MagicMock
 
 import pytest
+from logsight.connectors.connectors.elasticsearch import ElasticsearchConfigProperties
 
 from logsight.connectors.connectors.sql_db import DatabaseConfigProperties
+from logsight.services import ElasticsearchService
+from logsight.services.service_provider import ServiceProvider
+
+from common.job_dispatcher import PeriodicJobDispatcher, TimedJobDispatcher
 from logsight_jobs.common.factory import JobDispatcherFactory
 from logsight_jobs.persistence.dto import IndexInterval
 from logsight_jobs.persistence.timestamp_storage import PostgresTimestampStorage
@@ -18,6 +23,11 @@ def db():
     db.update_timestamps = MagicMock()
     db.close = MagicMock()
     return db
+
+
+@pytest.fixture
+def es_config():
+    yield ElasticsearchConfigProperties(scheme="scheme", host="host", port=9201, username="user", password="password")
 
 
 @pytest.fixture
@@ -68,7 +78,40 @@ def test_sync_index(job_dispatcher):
     assert job_dispatcher.storage.update_timestamps.call_count == len(idx)
 
 
+def test_select_es_index(es_config):
+    es = ElasticsearchService(es_config)
+    es._connect = MagicMock()
+    es.get_all_indices = MagicMock(return_value=["index_1", "index_2", "index_3"])
+    ServiceProvider.provide_elasticsearch = MagicMock(return_value=es)
+
+    result = PeriodicJobDispatcher.select_all_es_index()
+    assert result == {"index"}
+
+
 def test_start(job_dispatcher):
     job_dispatcher.timer.start = MagicMock()
     job_dispatcher.run()
     job_dispatcher.timer.start.assert_called()
+
+
+def test_timed_job_dispatcher():
+    job = MagicMock()
+    job.execute = MagicMock()
+    dispatcher = TimedJobDispatcher(job, 10, 'timer')
+    dispatcher.timer = MagicMock()
+    dispatcher.timer.reset_timer = MagicMock()
+
+    dispatcher.submit_job()
+
+    job.execute.assert_called_once()
+    dispatcher.timer.reset_timer.assert_called_once()
+
+
+def test_timed_job_dispatcher_start():
+    dispatcher = TimedJobDispatcher(MagicMock(), 10, 'timer')
+    dispatcher.timer = MagicMock()
+    dispatcher.timer.start = MagicMock()
+
+    dispatcher.run()
+    assert dispatcher.timer.daemon is True
+    dispatcher.timer.start.assert_called_once()

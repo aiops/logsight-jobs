@@ -18,7 +18,6 @@ class CalculateIncidentsTest(unittest.TestCase):
         es._connect = MagicMock()
         es.get_all_logs_for_index = MagicMock(return_value=processed_logs, side_effect=[processed_logs])
         job = CalculateIncidentJob(IndexInterval("incidents", datetime.min))
-        job.load_templates = MagicMock(return_value=[])
         result = job._calculate(es.get_all_logs_for_index("test"))
 
         self.assertEqual(expected_incident_result, result)
