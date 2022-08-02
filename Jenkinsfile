@@ -48,7 +48,7 @@ pipeline {
                                 sh """ 
                                     sonar-scanner -Dsonar.projectKey=aiops_logsight-jobs -Dsonar.branch.name=$BRANCH_NAME \
                                         -Dsonar.organization=logsight \
-                                        -Dsonar.sources=logsight -Dsonar.tests=tests/. \
+                                        -Dsonar.sources=logsight_jobs -Dsonar.tests=tests/. \
                                         -Dsonar.inclusions="**/*.py" \
                                         -Dsonar.python.coverage.reportPaths=coverage-report.xml \
                                         -Dsonar.test.reportPath=test-report.xml
