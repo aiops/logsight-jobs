@@ -101,17 +101,6 @@ class IndexJob(Job, ABC):
                 return []
 
     @staticmethod
-    def _delete_historical_incidents(index: str, start_time, end_time):
-        with ServiceProvider.provide_elasticsearch() as es:
-            try:
-                es.delete_logs_for_index(index, start_time.isoformat(),
-                                         end_time.isoformat())
-            except NotFoundError:
-                logger.warning(f"Index {index} is empty and data cannot be deleted")
-            except ConflictError:
-                logger.warning(f"Data on index {index} is already deleted.")
-
-    @staticmethod
     def _store_results(results: List, index: str):
         with ServiceProvider.provide_elasticsearch() as es:
             es.save(results, index)

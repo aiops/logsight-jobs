@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import dateutil.parser
 import pytest
+from elastic_transport import ApiResponseMeta, HttpHeaders, NodeConfig
 
 from logsight.connectors.connectors.elasticsearch import ElasticsearchConfigProperties
 from logsight.connectors.connectors.sql_db import DatabaseConfigProperties
@@ -12,6 +13,7 @@ from logsight_jobs.persistence.timestamp_storage import PostgresTimestampStorage
 from logsight.services.elasticsearch_service.elasticsearch_service import ElasticsearchService
 from logsight.services.service_provider import ServiceProvider
 from tests.inputs import processed_logs
+from elasticsearch import NotFoundError
 
 
 @pytest.fixture
@@ -19,6 +21,11 @@ from tests.inputs import processed_logs
 def index_job():
     return IndexJob(IndexInterval("index", datetime.min), index_ext="ext",
                     table_name="test")
+
+
+@pytest.fixture
+def es_config():
+    yield ElasticsearchConfigProperties(scheme="scheme", host="host", port=9201, username="user", password="password")
 
 
 @pytest.fixture
@@ -31,9 +38,6 @@ def db():
     return db
 
 
-@pytest.fixture
-def es_config():
-    yield ElasticsearchConfigProperties(scheme="scheme", host="host", port=9201, username="user", password="password")
 
 
 def test__execute(index_job, db):
@@ -85,9 +89,17 @@ def test__load_data_new_entries(index_job, es_config):
     assert result == processed_logs[:5]
 
 
-def update_timestamp(log):
-    log['ingest_timestamp'] = str(dateutil.parser.isoparse(log['ingest_timestamp']) + timedelta(hours=1))
-    return log
+def test__load_data_no_data(index_job, es_config):
+    es = ElasticsearchService(es_config)
+    es._connect = MagicMock()
+    es.get_all_logs_after_ingest = MagicMock(
+        side_effect=NotFoundError(message="index not found", body=None,
+                                  meta=ApiResponseMeta(status=200, headers=HttpHeaders(), duration=0,
+                                                       http_version="http2",
+                                                       node=NodeConfig("host", "port", 2000))))
+    ServiceProvider.provide_elasticsearch = MagicMock(return_value=es)
+    result = index_job._load_data('index', index_job.index_interval.latest_ingest_time)
+    assert len(result) == 0
 
 
 def test__store_results(index_job, es_config):
