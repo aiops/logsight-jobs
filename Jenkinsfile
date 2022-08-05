@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DOCKER = credentials('dockerhub')
-        DOCKER_REPO = "logsight/logsight"
+        DOCKER_REPO = "logsight/logsight-jobs"
         LOGSIGHT_LIB_VERSION = "lib"
         GITHUB_TOKEN = credentials('github-pat-jenkins')
     }
