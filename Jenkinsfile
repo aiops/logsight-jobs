@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKER = credentials('dockerhub')
         DOCKER_REPO = "logsight/logsight-jobs"
-        LOGSIGHT_LIB_VERSION = "lib"
+        LOGSIGHT_LIB_VERSION = "v1.3.0"
         GITHUB_TOKEN = credentials('github-pat-jenkins')
     }
 
@@ -24,7 +24,7 @@ pipeline {
                 sh 'apt-get update && apt-get install -y git-lfs'
                 sh 'pip install "git+https://$GITHUB_TOKEN@github.com/aiops/logsight.git@$LOGSIGHT_LIB_VERSION"'
                 sh 'py.test --junitxml test-report.xml --cov-report xml:coverage-report.xml --cov=logsight_jobs tests/'
-                stash name: 'test-reports', includes: '*.xml' 
+                stash name: 'test-reports', includes: '*.xml'
             }
             post {
                 always {
@@ -45,8 +45,9 @@ pipeline {
                         script {
                             unstash "test-reports"
                             withSonarQubeEnv('logsight-sonarqube') {
-                                sh """ 
+                                sh """
                                     sonar-scanner -Dsonar.projectKey=aiops_logsight-jobs -Dsonar.branch.name=$BRANCH_NAME \
+                                        -Dsonar.python.version=3 \
                                         -Dsonar.organization=logsight \
                                         -Dsonar.sources=logsight_jobs -Dsonar.tests=tests/. \
                                         -Dsonar.inclusions="**/*.py" \
